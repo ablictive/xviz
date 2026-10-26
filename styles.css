@@ -409,8 +409,10 @@ body[data-theme="amp"] .slider { font-size: 16px; }
 }
 @keyframes slideIn { from { opacity: 0; transform: translateX(16px); } }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 12px 10px 14px; border-bottom: 1px solid var(--deck-edge); }
-.tabs { display: flex; gap: 4px; }
-.tab { border: 0; background: transparent; color: var(--ink-dim); padding: 7px 12px; border-radius: var(--radius); cursor: pointer; font-family: var(--font-display); font-size: 14px; }
+.tabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.drawer-head > .gloss { flex: none; }
+.tab { flex: none; border: 0; background: transparent; color: var(--ink-dim); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; font-family: var(--font-display); font-size: 14px; }
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"] { color: var(--btn-ink); background: linear-gradient(180deg, var(--btn-top), var(--btn-bot)); box-shadow: 0 0 12px var(--accent); }
 body[data-theme="clean"] .tab[aria-selected="true"] { background: #fff; color: #111216; box-shadow: none; }
