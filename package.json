@@ -1,0 +1,11 @@
+{
+  "name": "xviz",
+  "version": "1.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "apple-token": "node scripts/apple-token.mjs",
+    "release": "node scripts/release.mjs"
+  }
+}
