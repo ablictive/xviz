@@ -80,6 +80,13 @@
     blob: '<path d="M16 3c6 0 13 5 12 12s-5 14-12 14S3 24 4 16 10 3 16 3z"/>',
     polys: '<path d="M16 3l11 19H5z" fill="none" stroke-width="1.6"/><path d="M16 8l8 8-8 8-8-8z" fill="none" stroke-width="1.6"/><circle cx="16" cy="16" r="3" fill="none" stroke-width="1.6"/>',
     flow: '<path d="M3 9c5-4 8 4 13 0s8-3 13 0M3 16c5-4 8 4 13 0s8-3 13 0M3 23c5-4 8 4 13 0s8-3 13 0" fill="none" stroke-width="1.6" stroke-linecap="round"/>',
+    dance: '<circle cx="9" cy="10" r="2.2"/><circle cx="16" cy="6" r="2.2"/><circle cx="23" cy="10" r="2.2"/><circle cx="26" cy="18" r="2.2"/><circle cx="20" cy="25" r="2.2"/><circle cx="12" cy="25" r="2.2"/><circle cx="6" cy="18" r="2.2"/><path d="M9 10L16 6L23 10L26 18L20 25L12 25L6 18Z" fill="none" stroke-width="1" opacity=".6"/>',
+    polar: '<path d="' + Array.from({ length: 121 }, (_, i) => { const t = i / 120 * Math.PI * 2, r = 13 * Math.cos(3 * t); return (i ? 'L' : 'M') + (16 + Math.cos(t) * r).toFixed(1) + ' ' + (16 + Math.sin(t) * r).toFixed(1); }).join('') + '" fill="none" stroke-width="1.6"/>',
+    wavy: '<path d="M2 12c4-4 7 4 11 0s7-4 11 0 6 2 6 2M2 18c4-5 8 5 12 0s8-4 12 0M2 25c4-4 8 4 12 0s8-4 14 0" fill="none" stroke-width="1.7" stroke-linecap="round"/>',
+    starfield: '<path d="M16 16L4 6M16 16L28 5M16 16L29 23M16 16L5 27M16 16L16 2M16 16L22 30" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="16" r="2"/>',
+    ripples: '<circle cx="16" cy="16" r="3"/><circle cx="16" cy="16" r="8" fill="none" stroke-width="1.6"/><circle cx="16" cy="16" r="13" fill="none" stroke-width="1.2" opacity=".6"/>',
+    tree: '<path d="M16 16V4M16 16l10-6M16 16l10 6M16 16v12M16 16L6 22M16 16L6 10M16 8l-3-3M16 8l3-3M22 12l2-4M22 12l4 1" fill="none" stroke-width="1.5" stroke-linecap="round"/>',
+    plasma: '<path d="M4 8c6-6 10 6 16 0s8 4 8 4v14H4z" opacity=".55"/><path d="M4 18c6-6 10 6 16 0s8 4 8 4v6H4z"/>',
     orbitals: '<ellipse cx="16" cy="16" rx="13" ry="5" fill="none" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(60 16 16)" fill="none" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(120 16 16)" fill="none" stroke-width="1.5"/>',
   };
   const gradCss = (colors, deg = 90) => `linear-gradient(${deg}deg, ${colors.join(', ')})`;
@@ -101,12 +108,73 @@
     b.addEventListener('click', () => { S.studio.colors = p.colors.slice(); saveStudio(true); });
     $('paletteGrid').append(b);
   });
-  const FX = [['bloom', 'Bloom'], ['trails', 'Trails'], ['zoom', 'Beat zoom'], ['mirror', 'Mirror'], ['kaleido', 'Kaleidoscope'], ['rgb', 'RGB split'], ['cycle', 'Color cycle']];
-  FX.forEach(([k, label]) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'fx'; b.dataset.fx = k; b.id = 'fx-' + k; b.textContent = label;
-    b.addEventListener('click', () => { S.studio.fx[k] = !S.studio.fx[k]; saveStudio(); });
+  // effects: [key, button label, strength-slider label, what it does]
+  const FX = [
+    ['bloom', 'Bloom', 'Bloom glow', 'Soft glow around bright shapes'],
+    ['trails', 'Trails', 'Trail length', 'Shapes leave fading trails'],
+    ['zoom', 'Beat zoom', 'Zoom punch', 'Pumps in on every kick'],
+    ['warp', 'Warp', 'Warp feedback', 'MilkDrop-style feedback tunnel'],
+    ['shake', 'Bass shake', 'Shake amount', 'Camera shake on heavy bass'],
+    ['mirror', 'Mirror', null, 'Left half mirrored to the right'],
+    ['quad', 'Quad mirror', null, 'Four-way mirror'],
+    ['kaleido', 'Kaleidoscope', 'Kaleido segments', 'Folds the image into 4–12 wedges'],
+    ['rgb', 'RGB split', 'RGB split', 'Chromatic fringes that jump on hits'],
+    ['glitch', 'Glitch', 'Glitch amount', 'Sliced, shifted frames on snares'],
+    ['pixel', 'Pixelate', 'Pixel size', 'Chunky pixels that grow on kicks'],
+    ['scan', 'Scanlines', 'Scanline darkness', 'CRT scanlines'],
+    ['grain', 'Film grain', 'Grain amount', 'Analog noise'],
+    ['vignette', 'Vignette', 'Vignette', 'Darkened edges'],
+    ['huepop', 'Hue pop', 'Hue jump', 'Colors jump on every snare'],
+    ['strobe', 'Strobe', 'Strobe intensity', 'Flashes on drops; snares and kicks at higher settings. Respects the flash setting'],
+    ['cycle', 'Color cycle', 'Cycle speed', 'Gradient slowly travels'],
+  ];
+  FX.forEach(([k, label, , help]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fx'; b.dataset.fx = k; b.id = 'fx-' + k; b.textContent = label; b.title = help;
+    b.addEventListener('click', () => { S.studio.fx[k] = !S.studio.fx[k]; if (k === 'mirror' && S.studio.fx.mirror) S.studio.fx.quad = false; if (k === 'quad' && S.studio.fx.quad) S.studio.fx.mirror = false; saveStudio(); });
     $('fxGrid').append(b);
   });
+  // a tuning row: label, live value, slider, help line
+  function sliderRow(box, id, label, min, max, step, help, get, set, fmt) {
+    const row = document.createElement('div'); row.className = 'tune-row';
+    const lab = document.createElement('label'); lab.htmlFor = id; lab.textContent = label;
+    const out = document.createElement('output'); out.id = 'out-' + id;
+    const inp = document.createElement('input'); inp.type = 'range'; inp.id = id; inp.min = min; inp.max = max; inp.step = step;
+    row.append(lab, out, inp);
+    if (help) { const sm = document.createElement('small'); sm.textContent = help; row.append(sm); }
+    const show = () => { inp.value = get(); out.textContent = fmt(Number(get())); };
+    inp.addEventListener('input', () => { set(Number(inp.value)); out.textContent = fmt(Number(inp.value)); });
+    $(box).append(row);
+    return show;
+  }
+  const pctFmt = v => `${Math.round(v * 100)}%`;
+  function persistStudio() { store.set('studio', JSON.stringify(S.studio)); }
+  function renderFxAmounts() {
+    const box = $('fxAmounts'); box.textContent = '';
+    const on = FX.filter(([k, , amtLabel]) => amtLabel && S.studio.fx[k]);
+    box.hidden = !on.length;
+    on.forEach(([k, , amtLabel]) => {
+      const fmt = k === 'kaleido' ? v => `${2 * Math.round(2 + v * 4)} wedges` : pctFmt;
+      sliderRow('fxAmounts', 'amt-' + k, amtLabel, 0, 1, 0.01, null, () => S.studio.amt[k], v => { S.studio.amt[k] = v; persistStudio(); }, fmt)();
+    });
+  }
+  const SHAPE = [
+    ['scale', 'Size', 0.4, 1.8, 0.01, 'How large the visual is'],
+    ['density', 'Density', 0.3, 2, 0.01, 'Particle, line and ring counts'],
+    ['thick', 'Thickness', 0.3, 3, 0.01, 'Line width and dot size'],
+    ['speed', 'Speed', 0, 3, 0.01, 'Motion speed on top of the music'],
+    ['detail', 'Complexity', 0.3, 2, 0.01, 'Layers, petals, branches'],
+    ['react', 'Reactivity', 0, 2, 0.01, 'How far shapes move with the spectrum'],
+  ];
+  const GRADE = [
+    ['bright', 'Brightness', 0.5, 1.8, 0.01, null, pctFmt],
+    ['sat', 'Saturation', 0, 2, 0.01, null, pctFmt],
+    ['hue', 'Hue shift', -180, 180, 1, 'Rotates every color in the gradient', v => `${Math.round(v)}°`],
+  ];
+  const adjustViews = [];
+  SHAPE.forEach(([k, label, min, max, step, help]) => adjustViews.push(sliderRow('shapeSliders', 'p-' + k, label, min, max, step, help, () => S.studio.p[k], v => { S.studio.p[k] = v; persistStudio(); }, pctFmt)));
+  GRADE.forEach(([k, label, min, max, step, help, fmt]) => adjustViews.push(sliderRow('colorSliders', 'p-' + k, label, min, max, step, help, () => S.studio.p[k], v => { S.studio.p[k] = v; persistStudio(); }, fmt)));
+  $('resetAdjust').addEventListener('click', () => { S.studio.p = { ...Studio.P_DEFAULT }; S.studio.amt = { ...Studio.AMT_DEFAULT }; saveStudio(); toast('Adjustments reset.', 1500); });
+  $('surpriseBtn').addEventListener('click', () => { const look = Studio.surprise(); applyLook(look, 'Surprise'); });
   document.querySelectorAll('[data-bg]').forEach(b => b.addEventListener('click', () => { S.studio.bg = b.dataset.bg; saveStudio(); }));
 
   function renderStops() {
@@ -136,6 +204,8 @@
     document.querySelectorAll('[data-palette]').forEach(b => b.setAttribute('aria-pressed', String(Studio.PALETTES[b.dataset.palette].colors.join() === st.colors.join())));
     document.querySelectorAll('[data-fx]').forEach(b => b.setAttribute('aria-pressed', String(!!st.fx[b.dataset.fx])));
     document.querySelectorAll('[data-bg]').forEach(b => b.setAttribute('aria-pressed', String(st.bg === b.dataset.bg)));
+    renderFxAmounts();
+    adjustViews.forEach(f => f());
     refreshStudioAccent();
     renderPresets();
   }
@@ -441,8 +511,12 @@
       ['punch', 'Beat punch', 0, 2, 0.05, 'How hard each kick hits the visuals'],
       ['motion', 'Motion speed', 0, 2.5, 0.05, 'Movement speed. It always follows the music\'s energy'],
     ],
+    tuneExtra: [
+      ['contrast', 'Contrast', 0.5, 2.5, 0.05, 'Higher makes quiet parts calmer and loud hits pop'],
+      ['latency', 'Latency offset', 0, 400, 5, 'Delay the visuals to match late sound, e.g. Bluetooth speakers (≈150–250 ms)'],
+    ],
   };
-  const pct = (k, v) => k === 'gain' || k === 'bass' || k === 'mid' || k === 'high' || k === 'punch' || k === 'motion' ? `${Math.round(v * 100)}%` : `${Math.round(v * 100)}`;
+  const pct = (k, v) => k === 'latency' ? `${Math.round(v)} ms` : k === 'contrast' ? `${v.toFixed(2)}×` : ['gain', 'bass', 'mid', 'high', 'punch', 'motion'].includes(k) ? `${Math.round(v * 100)}%` : `${Math.round(v * 100)}`;
   const saved = (() => { try { return JSON.parse(store.get('tune')) || {}; } catch { return {}; } })();
   Object.assign(Engine.tune, FEELS.Balanced, saved); delete Engine.tune.gain;
   Object.entries(TUNE_ROWS).forEach(([box, rows]) => rows.forEach(([k, label, min, max, step, help]) => {
@@ -474,7 +548,11 @@
     const cur = Object.entries(FEELS).find(([, f]) => Object.entries(f).every(([k, v]) => Math.abs(tuneValue(k) - v) < 0.011));
     document.querySelectorAll('[data-feel]').forEach(b => b.setAttribute('aria-pressed', String(!!cur && cur[0] === b.dataset.feel)));
   }
-  $('resetTune').addEventListener('click', () => applyFeel('Balanced'));
+  $('resetTune').addEventListener('click', () => { applyFeel('Balanced'); setTune('contrast', 1, true); setTune('latency', 0); });
+  [['lockToggle', 'lock'], ['autoSensToggle', 'autoSens']].forEach(([id, k]) => {
+    $(id).checked = !!Engine.tune[k];
+    $(id).addEventListener('change', e => { Engine.tune[k] = e.target.checked; store.set('tune', JSON.stringify(Engine.tune)); });
+  });
   refreshTuneUI();
 
   // live meter + hit lamps, drawn only while the Sync tab is open
@@ -672,7 +750,7 @@
     const a = Engine.analyse(S.sens, t);
     Object.assign(opts, { flash: S.flash, title: now.title, artist: now.artist, artImg: now.artImg, time: now.time, playing: now.playing });
     // visuals run on the audio clock (a.time), so motion follows the music instead of a metronome
-    if (S.view === 'studio') Studio.render(ctx, canvas, dpr, W, H, a, a.time, S.studio);
+    if (S.view === 'studio') Studio.render(ctx, canvas, dpr, W, H, a, a.time, S.studio, { flash: S.flash });
     else Themes.render(ctx, canvas, dpr, W, H, a, a.time, S.theme, S.mode, opts);
     drawMeter(a, t);
     drawFade(ctx, t);

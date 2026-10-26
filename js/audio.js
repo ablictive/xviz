@@ -56,13 +56,15 @@
     bpm: 0,
     // Reaction tuning (the Sync tab). Per-band gains, envelope speeds, beat sensitivity,
     // how hard beats hit, and how fast motion runs relative to the music.
-    tune: { bass: 1, mid: 1, high: 1, attack: 0.85, release: 0.55, beat: 0.5, punch: 1, motion: 1 },
+    tune: { bass: 1, mid: 1, high: 1, attack: 0.85, release: 0.55, beat: 0.5, punch: 1, motion: 1, contrast: 1, latency: 0, lock: false, autoSens: true },
     // outputs beyond bands/wave/bass/mid/high/energy:
     kick: false, snare: false, hat: false, drop: false,
     kickPulse: 0, snarePulse: 0, hatPulse: 0, dropPulse: 0,
     flux: 0, bright: 0, time: 0, // time = audio clock in ms, runs with the music
     _bandPeak: 0.3, _rmsAvg: 0.05, _beats: [], _floatWave: null, _lastT: 0, _speed: 1,
     _short: 0, _long: 0, _lastDrop: -1e9, _det: null, _prevAll: null, _fluxAvg: 1,
+    _phase: 0, _kAdj: 0, _kickTimes: [], _queue: [], _pool: [], _out: null,
+    beatPhase: 0, locked: false,
 
     _detectors() {
       if (this._det) return this._det;
@@ -127,7 +129,7 @@
       for (let i = 0; i < BANDS; i++) {
         // smooth crossfade between the bass / mid / high gain knobs
         const x = i / BANDS, g = x < 0.15 ? T.bass : x < 0.2 ? T.bass + (T.mid - T.bass) * (x - 0.15) / 0.05 : x < 0.55 ? T.mid : x < 0.62 ? T.mid + (T.high - T.mid) * (x - 0.55) / 0.07 : T.high;
-        const v = Math.min(1, raw[i] * sens * ag * g);
+        const v = Math.pow(Math.min(1, raw[i] * sens * ag * g), T.contrast || 1);
         b[i] += (v - b[i]) * (v > b[i] ? up : down);
       }
       this.bright = cs > 0 ? Math.min(1, cw / cs / BANDS * 2.2) : 0;
@@ -156,17 +158,39 @@
       this.energy = avg(0, BANDS);
 
       // --- onsets: kick, snare and hi-hat each get their own detector ---
-      const D = this._detectors(), k = 2.3 - T.beat * 1.7; // beat slider: 0 = only big hits, 1 = every tick
+      const D = this._detectors(), k = 2.3 - T.beat * 1.7 + (T.autoSens ? this._kAdj : 0); // beat slider: 0 = only big hits, 1 = every tick
       this.kick = this._onset(D.kick, t, k);
       this.snare = this._onset(D.snare, t, k + 0.2);
       this.hat = this._onset(D.hat, t, k + 0.3);
+      // auto sensitivity: steer the threshold so detected kicks run near the tempo
+      // (or about two a second before a tempo is known)
+      if (this.kick) this._kickTimes.push(t);
+      while (this._kickTimes.length && t - this._kickTimes[0] > 4000) this._kickTimes.shift();
+      if (T.autoSens && t - (this._lastAdj || 0) > 250) {
+        this._lastAdj = t;
+        const rate = this._kickTimes.length / 4, want = this.bpm ? this.bpm / 60 : 2;
+        if (rate > want * 1.35) this._kAdj = Math.min(0.9, this._kAdj + 0.05);
+        else if (rate < want * 0.6 && this.energy > 0.15) this._kAdj = Math.max(-0.9, this._kAdj - 0.05);
+      }
+      // beat lock: a phase-locked grid at the detected tempo. Real kicks nudge the phase,
+      // and pulses land on the grid even when a kick is missed or doubled.
+      const realKick = this.kick;
+      this.locked = !!(T.lock && this.bpm);
+      if (this.bpm) {
+        this._phase += dt / (60000 / this.bpm);
+        if (realKick) { const err = this._phase > 0.5 ? this._phase - 1 : this._phase; this._phase -= err * 0.35; }
+      }
+      let gridBeat = false;
+      if (this._phase >= 1) { this._phase -= Math.floor(this._phase); gridBeat = true; }
+      this.beatPhase = this._phase;
+      if (this.locked) this.kick = gridBeat;
       const hold = 0.8 + T.release * 0.15;
       this.kickPulse = this.kick ? 1 : this.kickPulse * decay(hold);
       this.snarePulse = this.snare ? 1 : this.snarePulse * decay(hold - 0.04);
       this.hatPulse = this.hat ? 1 : this.hatPulse * decay(hold - 0.12);
       this.beat = this.kick;
       this.beatPulse = Math.min(2, this.kickPulse * T.punch);
-      if (this.kick) { this._trackTempo(t); }
+      if (realKick) { this._trackTempo(t); }
       if (t - D.kick.last > 4000) this.bpm = 0;
 
       // --- overall onset strength (0..1) for motion ---
@@ -187,7 +211,29 @@
       const target = T.motion * (0.25 + this.energy * 1.5 + this.flux * 0.5 + this.beatPulse * 0.4);
       this._speed += (target - this._speed) * ease(0.12);
       this.time += dt * this._speed;
-      return this;
+      return T.latency > 0 ? this._delayed(t, T.latency) : this;
+    },
+
+    // Latency offset: hand the visuals the analysis from `ms` ago, for setups where the
+    // sound reaches your ears late (Bluetooth speakers and headphones). Hits that happen
+    // between output frames are merged so none are lost.
+    _delayed(t, ms) {
+      const KEYS = ['bass', 'mid', 'high', 'energy', 'flux', 'bright', 'kickPulse', 'snarePulse', 'hatPulse', 'dropPulse', 'beatPulse', 'bpm', 'time', 'beatPhase'];
+      const EVENTS = ['kick', 'snare', 'hat', 'drop', 'beat'];
+      const snap = this._pool.pop() || { bands: new Float32Array(BANDS), wave: new Float32Array(this.wave.length) };
+      snap.t = t; snap.bands.set(this.bands); snap.wave.set(this.wave);
+      KEYS.forEach(k => { snap[k] = this[k]; }); EVENTS.forEach(k => { snap[k] = this[k]; });
+      this._queue.push(snap);
+      if (!this._out) { this._out = { bands: new Float32Array(BANDS), wave: new Float32Array(this.wave.length) }; KEYS.forEach(k => { this._out[k] = this[k]; }); }
+      const o = this._out; EVENTS.forEach(k => { o[k] = false; });
+      while (this._queue.length && this._queue[0].t <= t - ms) {
+        const s = this._queue.shift();
+        o.bands.set(s.bands); o.wave.set(s.wave);
+        KEYS.forEach(k => { o[k] = s[k]; }); EVENTS.forEach(k => { o[k] = o[k] || s[k]; });
+        if (this._pool.length < 64) this._pool.push(s);
+      }
+      while (this._queue.length > 90) this._pool.push(this._queue.shift());
+      return o;
     },
 
     // Tempo: every pair of beats in the last 8 s votes for a BPM (gaps folded into 70–180),

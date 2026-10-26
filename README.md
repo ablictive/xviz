@@ -43,6 +43,12 @@ What drives what:
 - **Hi-hats:** sparkles and ripples.
 - **Drops:** a sudden jump in loudness triggers a bigger burst and, with Color cycle on, a color shift.
 
+**Add-ons:**
+- **Beat lock:** once the tempo is known, pulses run on a phase-locked grid that real kicks keep in time, so missed or doubled hits don't break the rhythm.
+- **Auto sensitivity:** steers the beat threshold so detected kicks track the tempo.
+- **Contrast:** makes quiet parts calmer and loud hits pop.
+- **Latency offset** (0–400 ms): delays the visuals to match sound that reaches you late, such as Bluetooth speakers and headphones (usually 150–250 ms).
+
 Settings are saved per device.
 
 ## Studio
@@ -52,6 +58,13 @@ Open it with the **Colors** button in the top bar or the **Studio** tab. Every S
 | Visualizer | Look |
 | --- | --- |
 | Nebula | 1,200-particle galaxy that swells with the bass |
+| Particle Dance | 280 dancers spring between formations (ring, flower, star, figure eight, spiral, grid, wave). Kicks throw them out, snares twist them, drops switch formation |
+| Polar Curves | Layered rose and spirograph curves; snares morph the petal count |
+| Wavy Form | A rolling 3-D sea of lines; the sound rolls toward you as swells |
+| Starfield | Hyperspace streaks that surge on every kick |
+| Ripples | Kicks, snares and hi-hats each drop their own ripple |
+| Fractal Tree | Six branching arms that open with the mids |
+| Plasma | Classic demoscene plasma mapped onto your gradient |
 | Ridges | Stacked pulsar lines scrolling back in time, like the classic album cover |
 | Tunnel | Rings rushing toward you, warped by the spectrum |
 | Sunflower | 720 golden-angle seeds that grow per frequency |
@@ -63,9 +76,11 @@ Open it with the **Colors** button in the top bar or the **Studio** tab. Every S
 
 **Colors:** pick one of 12 gradients, edit up to six color stops with the color pickers, add or remove stops, **Random** for a generated harmonious palette (or press R), and **Reverse**. The background can be **Deep** (a dark tint of your first color), **Black**, or **Wash** (a dim version of the whole gradient).
 
-**Effects** stack in any combination: Bloom, Trails, Beat zoom, Mirror, Kaleidoscope, RGB split and Color cycle.
+**Effects** stack in any combination, and each one shows a strength slider when it's on: Bloom, Trails, Beat zoom, Warp (MilkDrop-style feedback), Bass shake, Mirror, Quad mirror, Kaleidoscope (4–12 wedges), RGB split, Glitch, Pixelate, Scanlines, Film grain, Vignette, Hue pop, Strobe and Color cycle. Strobe follows **Settings → Flash and strobe effects** and is capped at about 2.5 flashes a second.
 
-**Presets:** eight built-in looks, plus **Save** for your own. **Copy mine** gives a share code (`XV1.…`) that anyone can paste into **Load**. On the full app you can also open a look directly with `?look=XV1.…` in the URL.
+**Shape** sliders: Size, Density, Thickness, Speed, Complexity and Reactivity. **Color grade**: Brightness, Saturation and Hue shift. **Surprise me** picks a random visualizer, palette and effect stack.
+
+**Presets:** 15 built-in looks, plus **Save** for your own. **Copy mine** gives a share code (`XV1.…`) that anyone can paste into **Load**. On the full app you can also open a look directly with `?look=XV1.…` in the URL.
 
 No build step and no dependencies. Plain HTML, CSS, and JavaScript.
 

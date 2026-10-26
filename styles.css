@@ -644,3 +644,9 @@ body[data-theme="aero"] .meter, body[data-theme="aero"] .feel { background: rgba
   font-size: 13px;
 }
 .update-later { border: 0; background: none; color: var(--ink-dim); cursor: pointer; font: inherit; font-size: 12.5px; }
+
+.group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.group-head h3 { margin: 0; }
+.fx-amounts { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--deck-edge); }
+.src-group > .gloss.small-btn { margin-top: 10px; }
+.toggle { line-height: 1.35; }

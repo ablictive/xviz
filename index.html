@@ -59,7 +59,7 @@
 
   <section class="tab-body" data-body="studio" hidden>
     <div class="src-group">
-      <h3>Visualizer</h3>
+      <div class="group-head"><h3>Visualizer</h3><button class="gloss small-btn" id="surpriseBtn" type="button" title="Random visualizer, colors and effects">Surprise me</button></div>
       <div class="vis-grid" id="visGrid"></div>
     </div>
     <div class="src-group" id="colorsSection">
@@ -84,6 +84,16 @@
     <div class="src-group">
       <h3>Effects</h3>
       <div class="fx-grid" id="fxGrid"></div>
+      <div class="tune fx-amounts" id="fxAmounts" hidden></div>
+    </div>
+    <div class="src-group">
+      <h3>Shape</h3>
+      <div class="tune" id="shapeSliders"></div>
+    </div>
+    <div class="src-group">
+      <h3>Color grade</h3>
+      <div class="tune" id="colorSliders"></div>
+      <button class="gloss small-btn" id="resetAdjust" type="button">Reset shape, color and effect strengths</button>
     </div>
     <div class="src-group">
       <h3>Presets</h3>
@@ -128,6 +138,12 @@
     <div class="src-group">
       <h3>Timing</h3>
       <div class="tune" id="tuneTiming"></div>
+    </div>
+    <div class="src-group">
+      <h3>Add-ons</h3>
+      <label class="toggle"><input type="checkbox" id="lockToggle"> Beat lock: keep pulses on the tempo grid even when hits are missed</label>
+      <label class="toggle"><input type="checkbox" id="autoSensToggle"> Auto sensitivity: adjust beat detection to each song</label>
+      <div class="tune" id="tuneExtra"></div>
     </div>
     <div class="src-group">
       <label class="toggle"><input type="checkbox" id="autoGainToggle"> Auto gain: keep quiet songs and the mic lively</label>
